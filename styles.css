@@ -1,0 +1,201 @@
+/* --- THEME VARIABLES --- */
+:root {
+    --body-bg: rgba(0, 0, 0, 0.10);
+    --card-bg: #ffffff;
+    --card-header-bg: #f8f9fa;
+    --text-color: #212529;
+    --text-color-light: #6c757d;
+    --border-color: #dee2e6;
+    --lite-row-bg: #f8f9fa;
+    --lite-stats-bg: #f8f9fa;
+    --lite-total-earnings-color: #198754; /* Dark Green */
+    --input-bg: #ffffff;
+    /* NEW COLORS */
+    --color-success: #198754; /* Bootstrap Green */
+    --color-danger: #dc3545;  /* Bootstrap Red */
+}
+
+body.dark-mode {
+    --body-bg: #212529;
+    --card-bg: #343a40;
+    --card-header-bg: #212529;
+    --text-color: #f8f9fa;
+    --text-color-light: #adb5bd;
+    --border-color: #495057;
+    --lite-row-bg: #495057;
+    --lite-stats-bg: #212529;
+    --lite-total-earnings-color: #ffc107; /* Yellow */
+    --input-bg: #495057;
+    /* NEW COLORS (Brighter for dark mode) */
+    --color-success: #20c997;
+    --color-danger: #ff6b81;
+}
+/* --- END THEME VARIABLES --- */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--body-bg);
+    color: var(--text-color);
+    transition: background-color 0.2s, color 0.2s;
+    font-size: 1.05rem; /* NEW: Increase base font size */
+}
+
+.container {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.card {
+    margin-bottom: 20px;
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--card-header-bg);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.card-header:first-child {
+  border-radius: 15px 15px 0 0;
+  font-weight: bold;
+}
+
+.card-body {
+    /* Fix for rounding */
+    border-radius: 0 0 15px 15px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.bold {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.hide-card-btn {
+    margin-left: 10px;
+}
+
+/* Fix for dark mode buttons */
+body.dark-mode .btn-outline-secondary {
+    color: var(--text-color);
+    border-color: var(--text-color-light);
+}
+body.dark-mode .btn-outline-secondary:hover {
+    color: #212529;
+    background-color: #f8f9fa;
+}
+
+/* Fix for form inputs in dark mode */
+.form-control, .form-select {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+.form-control:focus, .form-select:focus {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+}
+body.dark-mode .form-control option,
+body.dark-mode .form-select option {
+     background-color: var(--card-bg);
+     color: var(--text-color);
+}
+.form-control::placeholder {
+    color: var(--text-color-light);
+}
+.form-check-label {
+    color: var(--text-color);
+}
+
+
+/* Scroll fix for break list */
+.card[data-card-id="card9"] {
+    overflow: hidden;
+}
+.card[data-card-id="card9"] .card-body {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* Notification Modal */
+#breakNotificationModal .modal-content {
+    border-radius: 15px;
+    border: none;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.notification-header {
+    background: linear-gradient(45deg, #0d6efd, #6f42c1);
+    color: white;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+
+/* --- LITE MODE STYLES (now theme-aware) --- */
+.lite-counter-row {
+    background-color: var(--lite-row-bg);
+    border-radius: 10px;
+    transition: background-color 0.2s;
+    /* MODIFIED: Make label text lighter */
+    color: var(--text-color-light);
+}
+.lite-stats-box {
+    background-color: var(--lite-stats-bg);
+    border-radius: 10px;
+    transition: background-color 0.2s;
+    /* MODIFIED: Make label text lighter */
+    color: var(--text-color-light);
+}
+
+/* MODIFIED: Override for important numbers/data back to full color */
+.lite-counter-row span[id*="-count"],
+.lite-stats-box span[id*="-calls"] {
+    color: var(--text-color);
+}
+/* NOTE: lite-escal-percent and lite-total-earnings are handled by specific styles below */
+
+
+#lite-total-earnings {
+    color: var(--lite-total-earnings-color);
+    transition: color 0.2s;
+}
+
+/* NEW: Hide reset button */
+#lite-reset {
+    display: none;
+}
+
+/* NEW: Color classes for stats */
+.color-success {
+    color: var(--color-success) !important;
+}
+.color-danger {
+    color: var(--color-danger) !important;
+}
+
+
+/* Style for the toggle labels */
+label[for="liteModeToggle"],
+label[for="darkModeToggle"] {
+    font-weight: bold;
+}
+/* --- END LITE MODE STYLES --- */
