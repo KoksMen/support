@@ -15,6 +15,7 @@ let dismissedNotifications = [];
 // --- LITE & DARK MODE VARS ---
 let isLiteMode = false;
 let isDarkMode = false;
+let isDoublePay = false; // <-- НОВАЯ ПЕРЕМЕННАЯ
 let liteSolved = 0;
 let liteEscalated = 0;
 let liteRated = 0;
@@ -22,7 +23,7 @@ const liteModeHiddenCards = ['card1', 'card3', 'card4', 'card5', 'card6', 'card1
 // ----------------------------------------------------
 
 
-// --- HELPER FUNCTION ---
+// --- HELPER FUNCTIONS ---
 function checkColumnVisibility() {
     document.querySelectorAll('.oo-col').forEach(col => {
         const cardsInCol = col.querySelectorAll('.card');
@@ -36,7 +37,18 @@ function checkColumnVisibility() {
         }
     });
 }
-// --- END HELPER FUNCTION ---
+
+// НОВЫЕ ХЕЛПЕРЫ ДЛЯ СТОИМОСТИ
+function getSelfHandlingCost() {
+    const baseCost = parseFloat(document.getElementById('selfHandlingCostMain').value) || 0;
+    return baseCost * (isDoublePay ? 2 : 1);
+}
+
+function getEscalationCost() {
+    const baseCost = parseFloat(document.getElementById('escalationCostMain').value) || 0;
+    return baseCost * (isDoublePay ? 2 : 1);
+}
+// --- END HELPER FUNCTIONS ---
 
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -74,6 +86,19 @@ document.addEventListener('DOMContentLoaded', function() {
             applyDarkModeState();
         });
     }
+
+    // --- НОВЫЙ СЛУШАТЕЛЬ ДВОЙНОЙ ОПЛАТЫ ---
+    const doublePayToggle = document.getElementById('doublePayToggle');
+    if (doublePayToggle) {
+        doublePayToggle.addEventListener('change', function() {
+            isDoublePay = this.checked;
+            localStorage.setItem('isDoublePay', JSON.stringify(isDoublePay));
+            // Пересчитываем статистику при изменении
+            updateStatistics();
+            updateLiteModeUI();
+        });
+    }
+    // --- КОНЕЦ НОВОГО СЛУШАТЕЛЯ ---
 
     // --- LITE MODE LISTENERS ---
     document.getElementById('liteModeToggle').addEventListener('change', function() {
@@ -217,6 +242,8 @@ function addCall() {
     const escalated = document.getElementById('escalated').checked;
     const escalationQuestion = document.getElementById('escalationQuestionInput').value;
     const rated = document.getElementById('rated').checked;
+    
+    // ИЗМЕНЕНО: Получаем БАЗОВУЮ стоимость
     const selfHandlingCost = parseFloat(document.getElementById('selfHandlingCostMain').value);
     const escalationCost = parseFloat(document.getElementById('escalationCostMain').value);
 
@@ -230,7 +257,8 @@ function addCall() {
         return;
     }
 
-    const totalCost = escalated ? escalationCost : selfHandlingCost;
+    // ИЗМЕНЕНО: totalCost больше не хранится, он вычисляется динамически
+    // const totalCost = escalated ? escalationCost : selfHandlingCost; // <-- СТРОКА УДАЛЕНА
 
     calls.push({
         callDuration,
@@ -238,9 +266,9 @@ function addCall() {
         escalated,
         escalationQuestion,
         rated,
-        selfHandlingCost,
-        escalationCost,
-        totalCost,
+        selfHandlingCost, // <-- Сохраняем БАЗОВУЮ стоимость
+        escalationCost, // <-- Сохраняем БАЗОВУЮ стоимость
+        // totalCost,  // <-- СТРОКА УДАЛЕНА
         date: new Date()
     });
 
@@ -349,6 +377,8 @@ function saveCallCost() {
     
     if (isLiteMode) {
         updateLiteModeUI();
+    } else {
+        updateStatistics(); // Добавлено: обновляем статистику и в обычном режиме
     }
 
     alert('Стоимость звонков сохранена!');
@@ -404,6 +434,12 @@ window.addEventListener('load', function() {
 
     isLiteMode = JSON.parse(localStorage.getItem('isLiteMode')) || false;
     document.getElementById('liteModeToggle').checked = isLiteMode;
+
+    // НОВЫЙ БЛОК: Загрузка состояния двойной оплаты
+    isDoublePay = JSON.parse(localStorage.getItem('isDoublePay')) || false;
+    document.getElementById('doublePayToggle').checked = isDoublePay;
+    // КОНЕЦ НОВОГО БЛОКА
+
     liteSolved = JSON.parse(localStorage.getItem('liteSolved')) || 0;
     liteEscalated = JSON.parse(localStorage.getItem('liteEscalated')) || 0;
     liteRated = JSON.parse(localStorage.getItem('liteRated')) || 0;
@@ -439,6 +475,7 @@ function resetData() {
         localStorage.removeItem('liteSolved');
         localStorage.removeItem('liteEscalated');
         localStorage.removeItem('liteRated');
+        // Не сбрасываем isDoublePay, isLiteMode, isDarkMode, showBreakNotifications
 
         breaksLunches = [];
         calls = [];
@@ -460,18 +497,31 @@ function resetData() {
     }
 }
 
+// ### ИЗМЕНЕННАЯ ФУНКЦИЯ ###
 function updateStatistics() {
     const statistics = document.getElementById('statistics');
     const callCosts = document.getElementById('callCosts');
     statistics.innerHTML = '';
     callCosts.innerHTML = '';
 
+    // НОВЫЙ БЛОК: Получаем текущую (возможно, удвоенную) стоимость
+    const selfCost = getSelfHandlingCost();
+    const escCost = getEscalationCost();
+    // КОНЕЦ НОВОГО БЛОКА
+
     const totalCalls = calls.length;
     const nonEscalatedCalls = calls.filter(call => !call.escalated).length;
     const escalatedCalls = calls.filter(call => call.escalated).length;
-    const totalEarnings = calls.reduce((sum, call) => sum + call.totalCost, 0);
-    const nonEscalatedEarnings = calls.filter(call => !call.escalated).reduce((sum, call) => sum + call.totalCost, 0);
-    const escalatedEarnings = calls.filter(call => call.escalated).reduce((sum, call) => sum + call.totalCost, 0);
+    
+    // ИЗМЕНЕНО: Динамический расчет заработка
+    // const totalEarnings = calls.reduce((sum, call) => sum + call.totalCost, 0);
+    // const nonEscalatedEarnings = calls.filter(call => !call.escalated).reduce((sum, call) => sum + call.totalCost, 0);
+    // const escalatedEarnings = calls.filter(call => call.escalated).reduce((sum, call) => sum + call.totalCost, 0);
+    const nonEscalatedEarnings = nonEscalatedCalls * selfCost;
+    const escalatedEarnings = escalatedCalls * escCost;
+    const totalEarnings = nonEscalatedEarnings + escalatedEarnings;
+    // КОНЕЦ ИЗМЕНЕНИЙ
+
     const nonEscalatedPercentage = totalCalls > 0 ? ((nonEscalatedCalls / totalCalls) * 100).toFixed(2) : '0';
     const escalatedPercentage = totalCalls > 0 ? ((escalatedCalls / totalCalls) * 100).toFixed(2) : '0';
     const ratedCalls = calls.filter(call => call.rated).length;
@@ -646,6 +696,12 @@ async function exportCalls() {
         alert('Экспорт отключен в Лёгком режиме.');
         return;
     }
+
+    // НОВЫЙ БЛОК: Получаем текущую стоимость для экспорта
+    const currentSelfCost = getSelfHandlingCost();
+    const currentEscCost = getEscalationCost();
+    // КОНЕЦ НОВОГО БЛОКА
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('История звонков');
     const callDurationColors = {
@@ -690,7 +746,12 @@ async function exportCalls() {
         const pvoDurationText = getPvoDurationText(call.postCallDuration);
         const escalatedText = call.escalated ? 'Да' : 'Нет';
         const ratedText = call.rated ? 'Да' : 'Нет';
-        const priceText = call.escalated ? call.escalationCost.toFixed(2) : call.selfHandlingCost.toFixed(2);
+        
+        // ИЗМЕНЕНО: Используем текущую стоимость
+        // const priceText = call.escalated ? call.escalationCost.toFixed(2) : call.selfHandlingCost.toFixed(2);
+        const priceText = (call.escalated ? currentEscCost : currentSelfCost).toFixed(2);
+        // КОНЕЦ ИЗМЕНЕНИЙ
+
         const callDate = new Date(call.date);
         const dateInfo = callDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const timeInfo = callDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -747,8 +808,14 @@ async function exportCalls() {
              hoursSinceShiftStart = Math.ceil(timeSinceShiftStart / (1000 * 60 * 60));
         }
     }
-    const selfCallsBasicScores = calls.filter(call => !call.escalated).length * parseFloat(document.getElementById('selfHandlingCostMain').value);
-    const escalateCallsBasicScores = calls.filter(call => call.escalated).length * parseFloat(document.getElementById('escalationCostMain').value);
+
+    // ИЗМЕНЕНО: Используем текущую стоимость для статистики в экспорте
+    // const selfCallsBasicScores = calls.filter(call => !call.escalated).length * parseFloat(document.getElementById('selfHandlingCostMain').value);
+    // const escalateCallsBasicScores = calls.filter(call => call.escalated).length * parseFloat(document.getElementById('escalationCostMain').value);
+    const selfCallsBasicScores = calls.filter(call => !call.escalated).length * currentSelfCost;
+    const escalateCallsBasicScores = calls.filter(call => call.escalated).length * currentEscCost;
+    // КОНЕЦ ИЗМЕНЕНИЙ
+
     const callDurationCounts = Array(11).fill(0);
     const pvoDurationCounts = Array(3).fill(0);
     calls.forEach(call => {
@@ -1056,9 +1123,12 @@ function applyLiteModeState() {
 
 // ### MODIFIED FUNCTION ###
 function updateLiteModeUI() {
-    // Убедимся, что значения стоимости загружены из ГЛАВНОГО поля
-    const selfHandlingCost = parseFloat(document.getElementById('selfHandlingCostMain').value) || 0;
-    const escalationCost = parseFloat(document.getElementById('escalationCostMain').value) || 0;
+    // ИЗМЕНЕНО: Используем новые хелперы
+    // const selfHandlingCost = parseFloat(document.getElementById('selfHandlingCostMain').value) || 0;
+    // const escalationCost = parseFloat(document.getElementById('escalationCostMain').value) || 0;
+    const selfHandlingCost = getSelfHandlingCost();
+    const escalationCost = getEscalationCost();
+    // КОНЕЦ ИЗМЕНЕНИЙ
 
     // Обновляем счетчики
     document.getElementById('lite-solved-count').textContent = liteSolved;

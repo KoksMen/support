@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика звонков</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="icon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container" style="margin-top: 0px; padding-top: 15px;">
+        <div class="row">
+            <div class="col-md-4 oo-col">
+
+                <div class="card mb-4" id="liteModeBlock" style="display: none;" data-card-id="liteModeCard">
+                    <div class="card-header">
+                        <span>Статистика звонков</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="liteModeCard">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body" id="lite-mode-controls">
+                        <div class="d-flex align-items-center mb-3 p-2 lite-counter-row">
+                            <span style="font-size: 1.1rem; flex: 1; text-align: left;">Решено</span>
+                            <span id="lite-solved-count" style="font-size: 1.4rem; font-weight: bold; flex: 0 0 50px; text-align: center;">0</span>
+                            <div style="flex: 1; text-align: right;">
+                                <button class="btn btn-secondary btn-sm" id="lite-solved-minus" style="min-width: 35px;">-</button>
+                                <button class="btn btn-secondary btn-sm" id="lite-solved-plus" style="min-width: 35px;">+</button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3 p-2 lite-counter-row">
+                            <span style="font-size: 1.1rem; flex: 1; text-align: left;">Эскалировано</span>
+                            <span id="lite-escalated-count" style="font-size: 1.4rem; font-weight: bold; flex: 0 0 50px; text-align: center;">0</span>
+                            <div style="flex: 1; text-align: right;">
+                                <button class="btn btn-secondary btn-sm" id="lite-escalated-minus" style="min-width: 35px;">-</button>
+                                <button class="btn btn-secondary btn-sm" id="lite-escalated-plus" style="min-width: 35px;">+</button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3 p-2 lite-counter-row">
+                            <span style="font-size: 1.1rem; flex: 1; text-align: left;">Запрошено оценок</span>
+                            <span id="lite-rated-count" style="font-size: 1.4rem; font-weight: bold; flex: 0 0 50px; text-align: center;">0</span>
+                            <div style="flex: 1; text-align: right;">
+                                <button class="btn btn-secondary btn-sm" id="lite-rated-minus" style="min-width: 35px;">-</button>
+                                <button class="btn btn-secondary btn-sm" id="lite-rated-plus" style="min-width: 35px;">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 lite-stats-box">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span style="font-size: 1.1rem;">Всего звонков:</span>
+                                <span id="lite-total-calls" style="font-size: 1.1rem; font-weight: bold;">0</span>
+                                <button class="btn btn-warning btn-sm" id="lite-reset">Сброс</button>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span style="font-size: 1.1rem;">Процент эскалов:</span>
+                                <span id="lite-escal-percent" style="font-size: 1.1rem; font-weight: bold;">0%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span style="font-size: 1.1rem;">Общий заработок:</span>
+                                <span id="lite-total-earnings" style="font-size: 1.1rem; font-weight: bold;">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4" style="min-height: 34vh;max-height: 49vh;" data-card-id="card1">
+                    <div class="card-header">
+                        <span>Информация о звонках</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card1">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="callDuration">Длительность звонка:</label>
+                            <select class="form-control" id="callDuration" style="background-color: white; color: black; font-weight: bold">
+                                <option value="" hidden disabled style="color: black; font-weight: bold" selected></option>
+                                <option value="1" style="background-color: limegreen; color: black; font-weight: bold">От 0-я до 1-й минуты</option>
+                                <option value="2" style="background-color: limegreen; color: black; font-weight: bold">От 1-й до 2-х минут</option>
+                                <option value="3" style="background-color: limegreen; color: black; font-weight: bold">От 2-х до 3-х минут</option>
+                                <option value="4" style="background-color: yellow; color: black; font-weight: bold">От 3-х до 4-х минут</option>
+                                <option value="5" style="background-color: yellow; color: black; font-weight: bold">От 4-х до 5-и минут</option>
+                                <option value="6" style="background-color: yellow; color: black; font-weight: bold">От 5-и до 6-и минут</option>
+                                <option value="7" style="background-color: darkorange; color: black; font-weight: bold">От 6-и до 7-и минут</option>
+                                <option value="8" style="background-color: darkorange; color: black; font-weight: bold">От 7-и до 8-и минут</option>
+                                <option value="9" style="background-color: darkorange; color: black; font-weight: bold">От 8-и до 9-и минут</option>
+                                <option value="10" style="background-color: red; color: black; font-weight: bold">От 9-и до 10-и минут</option>
+                                <option value="11" style="background-color: red; color: black; font-weight: bold">Больше 10 минут</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="postCallDuration">Длительность поствызова:</label>
+                            <select class="form-control" id="postCallDuration" style="background-color: white; color: black; font-weight: bold">
+                                <option value="" hidden disabled style="color: black; font-weight: bold" selected></option>
+                                <option value="1" style="background-color: limegreen; color: black; font-weight: bold">До 30 секунд</option>
+                                <option value="2" style="background-color: yellow; color: black; font-weight: bold">От 31 до 60 секунд</option>
+                                <option value="3" style="background-color: red; color: black; font-weight: bold">Больше 60 секунд</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="escalated">Эскалирован:</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="escalated">
+                                        <label class="form-check-label" for="escalated">Да</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="rated">Оценен:</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="rated">
+                                        <label class="form-check-label" for="rated">Да</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" id="escalationQuestion" style="display: none;">
+                            <label for="escalationQuestionInput">Вопрос эскалации:</label>
+                            <textarea type="text" class="form-control" id="escalationQuestionInput"></textarea>
+                        </div>
+                        <div class="row p-2">
+                            <button id="addCallButton" disabled class="btn btn-outline-primary" onclick="addCall()">Добавить звонок</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5 oo-col">
+                <div class="card mb-4" style="min-height: 13vh; max-height: 17vh;" data-card-id="card2">
+                    <div class="card-header">
+                        <span>Таймеры</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card2">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="shiftTimer"></div>
+                        <div id="breakTimers"></div>
+                    </div>
+                </div>
+                <div class="card mb-4" style="min-height: 21vh; max-height: 23vh;" data-card-id="card3">
+                    <div class="card-header">
+                        <span>Статистика</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card3">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="statistics"></div>
+                    </div>
+                </div>
+                <div class="card mb-4" style="min-height: 16vh; max-height: 19vh;" data-card-id="card4">
+                    <div class="card-header">
+                        <span>Стоимость звонков</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card4">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="callCosts"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 oo-col">
+                <div class="card mb-4" data-card-id="card5">
+                    <div class="card-header">
+                        <span>Статистика по длительности звонка</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card5">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="callDurationStats"></div>
+                    </div>
+                </div>
+                <div class="card mb-4" data-card-id="card6">
+                    <div class="card-header">
+                        <span>Статистика по длительности поствызова</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card6">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="postCallDurationStats"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 oo-col">
+                <div class="card mb-4" style="min-height: 36vh; max-height: 40vh;" data-card-id="card7">
+                    <div class="card-header">
+                        <span>Смена и перерывы</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card7">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="shiftDate">Дата смены:</label>
+                            <input type="date" class="form-control" id="shiftDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="startTime">Время начала:</label>
+                            <input type="time" class="form-control" id="startTime">
+                        </div>
+                        <div class="form-group">
+                            <label for="endTime">Время окончания:</label>
+                            <input type="time" class="form-control" id="endTime">
+                        </div>
+                        <div class="row p-2">
+                            <button class="btn btn-outline-primary" onclick="addShift()">Добавить смену</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 oo-col">
+                <div class="card mb-4" style="min-height: 44vh; max-height: 48vh;" data-card-id="card8">
+                    <div class="card-header">
+                        <span>Перерывы и обеды</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card8">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="breakDate">Дата:</label>
+                            <input type="date" class="form-control" id="breakDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="breakStartTime">Время начала:</label>
+                            <input type="time" class="form-control" id="breakStartTime">
+                        </div>
+                        <div class="form-group">
+                            <label for="breakEndTime">Время окончания:</label>
+                            <input type="time" class="form-control" id="breakEndTime">
+                        </div>
+                        <div class="form-group">
+                            <label for="breakType">Тип:</label>
+                            <select class="form-control" id="breakType">
+                                <option value="break">Перерыв</option>
+                                <option value="lunch">Обед</option>
+                            </select>
+                        </div>
+                        <div class="row p-2">
+                            <button class="btn btn-outline-primary" onclick="addBreak()">Добавить перерыв/обед</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 oo-col">
+                <div class="card mb-4" style="height: 47vh;" data-card-id="card9">
+                    <div class="card-header">
+                        <span>Список перерывов и обедов</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card9">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="breaksLunchesList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 oo-col">
+                <div class="card mb-4" style="min-height: 29vh; max-height: 32vh;" data-card-id="card10">
+                    <div class="card-header">
+                        <span>Стоимость звонков (Настройки)</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card10">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="selfHandlingCost">Стоимость самостоятельной обработки:</label>
+                            <input type="number" step="0.01" value="0.68" class="form-control" id="selfHandlingCost">
+                        </div>
+                        <div class="form-group">
+                            <label for="escalationCost">Стоимость эскалации:</label>
+                            <input type="number" step="0.01" value="0.24" class="form-control" id="escalationCost">
+                        </div>
+                        <div class="row p-2">
+                            <button class="btn btn-outline-primary" onclick="saveCallCost()">Сохранить стоимость звонка</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 oo-col">
+                <div class="card mb-4" style="min-height: 19vh; max-height: 21vh;" data-card-id="card11">
+                    <div class="card-header">
+                        <span>Экспорт данных</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card11">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row p-2">
+                            <button class="btn btn-outline-primary" onclick="exportCalls()">Экспорт звонков</button>
+                        </div>
+                        <div class="row p-2">
+                            <button class="btn btn-outline-primary" onclick="exportEscalations()">Экспорт эскалаций</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 oo-col">
+                <div class="card mb-4" style="min-height: 29vh; max-height: 32vh;" data-card-id="card12">
+                    <div class="card-header">
+                        <span>Сброс статистики</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card12">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row p-3 pb-2 pt-1">
+                            Что произойдет: <br/>
+                            1) Удалятся все перерывы и обеды <br/>
+                            2) Удалится вся история звонков и эскалаций <br/>
+                            3) Удалится вся статистика звонков <br/> <br/>
+                            Это действие нельзя отменить!
+                        </div>
+                        <div class="row p-2">
+                            <button id="resetButton" class="btn btn-danger">Сбросить данные</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 oo-col">
+                <div class="card mb-4" data-card-id="card13">
+                    <div class="card-header">
+                        <span>Список звонков</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card13">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body" style="max-height: 35vh; overflow-y: auto;">
+                        <div id="callList"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 oo-col">
+                <div class="card mb-4" data-card-id="card14">
+                    <div class="card-header">
+                        <span>Эскалируемые звонки</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card14">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body" style="max-height: 35vh; overflow-y: auto;">
+                        <div id="escalatedCalls"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12 oo-col">
+                <div class="card mb-4" data-card-id="card15">
+                    <div class="card-header">
+                        <span>Настройки</span>
+                        <button class="btn btn-sm btn-outline-secondary float-end hide-card-btn" data-card-id="card15">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="selfHandlingCostMain">Стоимость самостоятельной обработки:</label>
+                                    <input type="number" step="0.01" value="0.68" class="form-control" id="selfHandlingCostMain">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="escalationCostMain">Стоимость эскалации:</label>
+                                    <input type="number" step="0.01" value="0.24" class="form-control" id="escalationCostMain">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row p-2 mb-3">
+                            <div class="col">
+                                <button class="btn btn-outline-primary w-100" onclick="saveCallCost()">Сохранить стоимость звонка</button>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="form-check form-switch mb-3">
+                          <input class="form-check-input" type="checkbox" role="switch" id="notificationSwitch" checked>
+                          <label class="form-check-label" for="notificationSwitch">Показывать уведомление о начале перерыва/обеда</label>
+                        </div>
+                        
+                        <hr>
+
+                        <div class="form-group">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                                <label class="form-check-label">Тёмный режим</label>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="form-group">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="liteModeToggle">
+                                <label class="form-check-label">Легкий режим статистики звонков</label>
+                            </div>
+                        </div>
+                        
+                        <hr> <div class="form-group">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="doublePayToggle">
+                                <label class="form-check-label">Двойная оплата</label>
+                            </div>
+                        </div>
+                        </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-3">
+        <div class="text-center">
+            <button id="resetVisibilityButton" class="btn btn-primary">Сбросить видимость всех блоков</button>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="breakNotificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+          <div class="modal-header notification-header">
+            <h5 class="modal-title" id="notificationTitle"><i class="bi bi-cup-hot-fill me-2"></i>Начался перерыв!</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center p-4">
+            <p class="h5">Прошло времени:</p>
+            <p id="elapsedTime" class="display-4 fw-bold">00:00:00</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.16.9/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
