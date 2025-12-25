@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика звонков</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="icon.ico" type="image/x-icon" id="dynamicIcon">
+</head>
+<body>
+    <div class="container main-wrapper">
+        <div class="row" id="mainContainer">
+            <div class="col-md-4 oo-col" id="col-1">
+
+                <div class="card draggable-card" id="liteModeBlock" style="display: none;" data-card-id="liteModeCard">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-calculator me-2"></i>Статистика звонков</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="liteModeCard" title="Скрыть">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body" id="lite-mode-controls">
+                        <div class="d-flex align-items-center justify-content-between mb-3 p-2 lite-counter-row">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill text-success fs-4 me-2"></i>
+                                <span class="lite-label">Решено</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-outline-secondary btn-lg btn-control me-2" id="lite-solved-minus"><i class="bi bi-dash-lg"></i></button>
+                                <span id="lite-solved-count" class="lite-count mx-2">0</span>
+                                <button class="btn btn-outline-primary btn-lg btn-control ms-2" id="lite-solved-plus"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mb-3 p-2 lite-counter-row">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-arrow-up-right-circle-fill text-danger fs-4 me-2"></i>
+                                <span class="lite-label">Эскал.</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-outline-secondary btn-lg btn-control me-2" id="lite-escalated-minus"><i class="bi bi-dash-lg"></i></button>
+                                <span id="lite-escalated-count" class="lite-count mx-2">0</span>
+                                <button class="btn btn-outline-primary btn-lg btn-control ms-2" id="lite-escalated-plus"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mb-3 p-2 lite-counter-row">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-star-fill text-warning fs-4 me-2"></i>
+                                <span class="lite-label">Оценено</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-outline-secondary btn-lg btn-control me-2" id="lite-rated-minus"><i class="bi bi-dash-lg"></i></button>
+                                <span id="lite-rated-count" class="lite-count mx-2">0</span>
+                                <button class="btn btn-outline-primary btn-lg btn-control ms-2" id="lite-rated-plus"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 lite-stats-box">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span><i class="bi bi-telephone me-2"></i>Всего звонков:</span>
+                                <span id="lite-total-calls" class="fw-bold">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span><i class="bi bi-percent me-2"></i>Процент эскалов:</span>
+                                <span id="lite-escal-percent" class="fw-bold">0%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-wallet2 me-2"></i>Общий заработок:</span>
+                                <span id="lite-total-earnings" class="fw-bold fs-5">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card draggable-card" data-card-id="card1">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-info-circle me-2"></i>Информация о звонках</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card1">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        
+                        <div id="complexInputs">
+                            <div class="form-group mb-3">
+                                <label for="callDuration" class="form-label fw-bold small text-muted">Длительность звонка</label>
+                                <select class="form-select rounded-pill" id="callDuration">
+                                    <option value="" hidden disabled selected>Выберите время...</option>
+                                    <option value="1" style="background-color: #d1e7dd; color: #0f5132;">От 0 до 1 минуты</option>
+                                    <option value="2" style="background-color: #d1e7dd; color: #0f5132;">От 1 до 2 минут</option>
+                                    <option value="3" style="background-color: #d1e7dd; color: #0f5132;">От 2 до 3 минут</option>
+                                    <option value="4" style="background-color: #fff3cd; color: #664d03;">От 3 до 4 минут</option>
+                                    <option value="5" style="background-color: #fff3cd; color: #664d03;">От 4 до 5 минут</option>
+                                    <option value="6" style="background-color: #fff3cd; color: #664d03;">От 5 до 6 минут</option>
+                                    <option value="7" style="background-color: #ffebd1; color: #cc5200;">От 6 до 7 минут</option>
+                                    <option value="8" style="background-color: #ffebd1; color: #cc5200;">От 7 до 8 минут</option>
+                                    <option value="9" style="background-color: #ffebd1; color: #cc5200;">От 8 до 9 минут</option>
+                                    <option value="10" style="background-color: #f8d7da; color: #842029;">От 9 до 10 минут</option>
+                                    <option value="11" style="background-color: #f8d7da; color: #842029;">Больше 10 минут</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="postCallDuration" class="form-label fw-bold small text-muted">Длительность поствызова</label>
+                                <select class="form-select rounded-pill" id="postCallDuration">
+                                    <option value="" hidden disabled selected>Выберите время...</option>
+                                    <option value="1" style="background-color: #d1e7dd; color: #0f5132;">До 30 секунд</option>
+                                    <option value="2" style="background-color: #fff3cd; color: #664d03;">От 31 до 60 секунд</option>
+                                    <option value="3" style="background-color: #f8d7da; color: #842029;">Больше 60 секунд</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="mediumInputs" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">Длительность звонка</label>
+                                <div class="multiplier-selector p-1" id="medCallContainer">
+                                    <div class="swap-wrapper w-50" data-side="left">
+                                        <input type="radio" class="btn-check" name="medCallDur" id="medCallTarget" value="2">
+                                        <label class="multiplier-option option-success" for="medCallTarget">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            <span class="fw-bold">Таргет</span>
+                                            <small>< 3 мин</small>
+                                        </label>
+                                    </div>
+                                    <div class="swap-wrapper w-50" data-side="right">
+                                        <input type="radio" class="btn-check" name="medCallDur" id="medCallMiss" value="5">
+                                        <label class="multiplier-option option-danger" for="medCallMiss">
+                                            <i class="bi bi-x-circle-fill"></i>
+                                            <span class="fw-bold">Не таргет</span>
+                                            <small>> 3 мин</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">Длительность ПВО</label>
+                                <div class="multiplier-selector p-1" id="medPvoContainer">
+                                    <div class="swap-wrapper w-50" data-side="left">
+                                        <input type="radio" class="btn-check" name="medPvoDur" id="medPvoTarget" value="1">
+                                        <label class="multiplier-option option-success" for="medPvoTarget">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            <span class="fw-bold">Таргет</span>
+                                            <small>< 30 сек</small>
+                                        </label>
+                                    </div>
+                                    <div class="swap-wrapper w-50" data-side="right">
+                                        <input type="radio" class="btn-check" name="medPvoDur" id="medPvoMiss" value="3">
+                                        <label class="multiplier-option option-danger" for="medPvoMiss">
+                                            <i class="bi bi-x-circle-fill"></i>
+                                            <span class="fw-bold">Не таргет</span>
+                                            <small>> 30 сек</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">Эскалация</label>
+                                <div class="multiplier-selector p-1" id="medEscContainer">
+                                    <div class="swap-wrapper w-50" data-side="left">
+                                        <input type="radio" class="btn-check" name="medEscalated" id="medEscNo" value="false" checked>
+                                        <label class="multiplier-option option-success" for="medEscNo">
+                                            <span class="fw-bold">Нет</span>
+                                        </label>
+                                    </div>
+                                    <div class="swap-wrapper w-50" data-side="right">
+                                        <input type="radio" class="btn-check" name="medEscalated" id="medEscYes" value="true">
+                                        <label class="multiplier-option option-danger" for="medEscYes">
+                                            <span class="fw-bold">Да</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">Оценка</label>
+                                <div class="multiplier-selector p-1" id="medRateContainer">
+                                    <div class="swap-wrapper w-50" data-side="left">
+                                        <input type="radio" class="btn-check" name="medRated" id="medRateNo" value="false" checked>
+                                        <label class="multiplier-option option-secondary" for="medRateNo">
+                                            <span class="fw-bold">Нет</span>
+                                        </label>
+                                    </div>
+                                    <div class="swap-wrapper w-50" data-side="right">
+                                        <input type="radio" class="btn-check" name="medRated" id="medRateYes" value="true">
+                                        <label class="multiplier-option option-primary" for="medRateYes">
+                                            <span class="fw-bold">Да</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="complexSwitches">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="escalated">
+                                        <label class="form-check-label" for="escalated">Эскалирован</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="rated">
+                                        <label class="form-check-label" for="rated">Оценен</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3" id="escalationQuestion" style="display: none;">
+                            <label for="escalationQuestionInput" class="form-label">Вопрос эскалации</label>
+                            <textarea class="form-control" id="escalationQuestionInput" rows="2"></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button id="addCallButton" disabled class="btn btn-primary rounded-pill shadow-sm" onclick="addCall()">
+                                <i class="bi bi-plus-lg me-2"></i>Добавить звонок
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5 oo-col" id="col-2">
+                <div class="card draggable-card" data-card-id="card2">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-stopwatch me-2"></i>Таймеры</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card2">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="shiftTimer" class="timer-display mb-3"></div>
+                        <div id="breakTimers" class="timer-sub-display text-muted"></div>
+                    </div>
+                </div>
+                
+                <div class="card draggable-card" data-card-id="card3">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-bar-chart-line me-2"></i>Общая статистика</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card3">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="statistics"></div>
+                    </div>
+                </div>
+
+                <div class="card draggable-card" data-card-id="card4">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-cash-stack me-2"></i>Финансовый отчет</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card4">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="callCosts"></div>
+                    </div>
+                </div>
+
+                <div class="card draggable-card" data-card-id="card11">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-box-arrow-right me-2"></i>Экспорт</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card11">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-success" onclick="exportCalls()">
+                                <i class="bi bi-file-earmark-spreadsheet me-2"></i>Экспорт звонков (.xlsx)
+                            </button>
+                            <button class="btn btn-outline-success" id="exportEscalationBtn" onclick="exportEscalations()">
+                                <i class="bi bi-file-earmark-spreadsheet me-2"></i>Экспорт эскалаций (.xlsx)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 oo-col" id="col-3">
+                <div class="card draggable-card" data-card-id="card5">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-hourglass-split me-2"></i>Длительность</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card5">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="text-center border-bottom pb-2 mb-3">
+                            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Среднее время</small>
+                            <div id="avgCallDuration" class="fw-bold fs-3 text-primary">00:00</div>
+                        </div>
+                        <div id="callDurationStats" class="stats-container"></div>
+                    </div>
+                </div>
+                <div class="card draggable-card" data-card-id="card6">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-hourglass me-2"></i>ПВО</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card6">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-3">
+                         <div class="text-center border-bottom pb-2 mb-3">
+                            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Среднее время</small>
+                            <div id="avgPvoDuration" class="fw-bold fs-3 text-primary">00:00</div>
+                        </div>
+                        <div id="postCallDurationStats" class="stats-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" id="secondContainer">
+            <div class="col-md-4 oo-col" id="col-4">
+                <div class="card draggable-card" data-card-id="card7">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-calendar3 me-2"></i>Смена и Оплата</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card7">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3"><i class="bi bi-clock me-1"></i>Параметры смены</h6>
+                        <div class="form-floating mb-2">
+                            <input type="date" class="form-control" id="shiftDate" placeholder="Дата">
+                            <label for="shiftDate">Дата смены</label>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="form-floating">
+                                    <input type="time" class="form-control" id="startTime" placeholder="Начало">
+                                    <label for="startTime">Начало</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-floating">
+                                    <input type="time" class="form-control" id="endTime" placeholder="Конец">
+                                    <label for="endTime">Конец</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid mb-4">
+                            <button class="btn btn-outline-primary btn-sm" onclick="addShift()">Сохранить параметры</button>
+                        </div>
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3 border-top pt-3"><i class="bi bi-cup-hot me-1"></i>Перерыв/обед</h6>
+                        <div class="form-floating mb-2">
+                            <input type="date" class="form-control" id="breakDate" placeholder="Дата">
+                            <label for="breakDate">Дата</label>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <div class="form-floating">
+                                    <input type="time" class="form-control" id="breakStartTime" placeholder="Начало">
+                                    <label for="breakStartTime">Начало</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-floating">
+                                    <input type="time" class="form-control" id="breakEndTime" placeholder="Конец">
+                                    <label for="breakEndTime">Конец</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <select class="form-select" id="breakType">
+                                <option value="break">Перерыв</option>
+                                <option value="lunch">Обед</option>
+                            </select>
+                            <label for="breakType">Тип</label>
+                        </div>
+                        <div class="d-grid mb-3">
+                            <button class="btn btn-outline-primary btn-sm" onclick="addBreak()">Добавить</button>
+                        </div>
+
+                        <div class="accordion accordion-flush border rounded" id="payAccordion">
+                            <div class="accordion-item bg-transparent">
+                                <h2 class="accordion-header" id="headingPay">
+                                    <button class="accordion-button collapsed bg-transparent shadow-none py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePay">
+                                        <i class="bi bi-cash-coin me-2"></i> Оплата по времени
+                                    </button>
+                                </h2>
+                                <div id="collapsePay" class="accordion-collapse collapse" data-bs-parent="#payAccordion">
+                                    <div class="accordion-body p-2">
+                                        <div class="input-group input-group-sm mb-2">
+                                            <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                            <input type="time" class="form-control" id="payStartTime">
+                                            <span class="input-group-text">-</span>
+                                            <input type="time" class="form-control" id="payEndTime">
+                                            <select class="form-select" id="payMultiplierSelect" style="max-width: 80px;">
+                                                <option value="2">x2</option>
+                                                <option value="3">x3</option>
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-sm btn-success w-100 mb-2" onclick="addPayInterval()"><i class="bi bi-plus-circle me-1"></i>Добавить</button>
+                                        
+                                        <ul class="list-group list-group-flush small" id="payIntervalList">
+                                            </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 oo-col" id="col-5">
+                <div class="card draggable-card" style="max-height: 80vh;" data-card-id="card9">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-list-check me-2"></i>Список перерывов</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card9">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="breaksLunchesList" class="p-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 oo-col" id="col-6">
+                <div class="card draggable-card" data-card-id="card12">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Сброс данных</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card12">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning small mb-3">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            Удалит всё: историю, настройки смены, перерывы.
+                        </div>
+                        <div class="d-grid">
+                            <button id="resetButton" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Сбросить всё
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" id="thirdContainer">
+            <div class="col-md-6 oo-col" id="col-7">
+                <div class="card draggable-card" data-card-id="card13">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-journal-text me-2"></i>История звонков</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card13">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0" style="max-height: 40vh; overflow-y: auto;">
+                        <div id="callList" class="p-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 oo-col" id="col-8">
+                <div class="card draggable-card" data-card-id="card14" id="escalationBlock">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-arrow-up-right-square me-2"></i>Эскалации</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card14">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0" style="max-height: 40vh; overflow-y: auto;">
+                        <div id="escalatedCalls" class="p-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row" id="fourthContainer">
+            <div class="col-md-12 oo-col" id="col-9">
+                <div class="card draggable-card" data-card-id="card15">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-grip-vertical drag-handle me-2"></i>
+                            <span class="fw-bold"><i class="bi bi-gear me-2"></i>Глобальные настройки</span>
+                        </div>
+                        <button class="btn btn-sm btn-icon hide-card-btn" data-card-id="card15">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="selfHandlingCostMain" class="form-label text-muted small fw-bold">Цена (Самост. обраб.)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">БО</span>
+                                    <input type="number" step="0.01" value="0.54" class="form-control" id="selfHandlingCostMain">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="escalationCostMain" class="form-label text-muted small fw-bold">Цена (Эскалация)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">БО</span>
+                                    <input type="number" step="0.01" value="0.19" class="form-control" id="escalationCostMain">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid mt-3 mb-4">
+                            <button class="btn btn-primary" onclick="saveCallCost()">Сохранить цены</button>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-2">
+                                  <input class="form-check-input" type="checkbox" role="switch" id="notificationSwitch" checked>
+                                  <label class="form-check-label" for="notificationSwitch">Уведомления о перерывах</label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="saveEscalationTextToggle" checked>
+                                    <label class="form-check-label">Сохранять текст эскалации</label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                                    <label class="form-check-label">Тёмный режим</label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="swapButtonsToggle">
+                                    <label class="form-check-label">Инвертировать кнопки (Средний режим)</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2">Режим работы:</label>
+                                <div class="multiplier-selector mb-3">
+                                    <input type="radio" class="btn-check" name="appMode" id="modeLight" value="light">
+                                    <label class="multiplier-option" for="modeLight">
+                                        <span class="fw-bold">Лёгкий</span>
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="appMode" id="modeMedium" value="medium">
+                                    <label class="multiplier-option" for="modeMedium">
+                                        <span class="fw-bold">Средний</span>
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="appMode" id="modeComplex" value="complex" checked>
+                                    <label class="multiplier-option" for="modeComplex">
+                                        <span class="fw-bold">Сложный</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-2">
+                            <label class="form-label fw-bold mb-2 small text-muted text-uppercase">Множитель по умолчанию:</label>
+                            <div class="multiplier-selector">
+                                <input type="radio" class="btn-check" name="globalMultiplier" id="payX1" value="1" checked>
+                                <label class="multiplier-option" for="payX1">
+                                    <span class="fw-bold">x1</span>
+                                    <small>Стандарт</small>
+                                </label>
+                              
+                                <input type="radio" class="btn-check" name="globalMultiplier" id="payX2" value="2">
+                                <label class="multiplier-option" for="payX2">
+                                    <span class="fw-bold">x2</span>
+                                    <small>Двойная</small>
+                                </label>
+                              
+                                <input type="radio" class="btn-check" name="globalMultiplier" id="payX3" value="3">
+                                <label class="multiplier-option" for="payX3">
+                                    <span class="fw-bold">x3</span>
+                                    <small>Тройная</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-2 mb-5">
+        <div class="d-flex justify-content-center gap-2">
+            <button id="resetVisibilityButton" class="btn btn-outline-secondary btn-sm">Показать скрытые блоки</button>
+            <button id="resetOrderButton" class="btn btn-outline-warning btn-sm">Сбросить порядок блоков</button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="breakNotificationModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0 overflow-hidden">
+          <div class="modal-header notification-header text-white justify-content-center border-0 pb-0">
+             <i class="bi bi-alarm-fill fs-1 pulse-animation"></i>
+          </div>
+          <div class="modal-body text-center p-4 pt-2">
+            <h4 class="modal-title fw-bold mb-1" id="notificationTitle">Перерыв!</h4>
+            <p class="text-muted small mb-4">Время пошло, хорошего отдыха!</p>
+            
+            <div class="time-container bg-light rounded-pill p-3 mb-3 border">
+                <p id="elapsedTime" class="display-3 fw-bold mb-0 text-dark" style="font-family: 'Courier New', monospace;">00:00:00</p>
+            </div>
+            
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Закрыть</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.16.9/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
