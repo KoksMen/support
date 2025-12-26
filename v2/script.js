@@ -22,9 +22,13 @@ let currentMode = 'complex';
 let isDarkMode = false;
 let isSwapButtons = false; 
 let globalMultiplier = 1; 
-let liteSolved = 0;
-let liteEscalated = 0;
-let liteRated = 0;
+
+// --- LITE MODE MAPS (NEW) ---
+// Now storing counts per multiplier { "1": count, "2": count ... }
+let liteSolvedMap = { "1": 0 };
+let liteEscalatedMap = { "1": 0 };
+let liteRated = 0; // Rated remains simple int
+
 const liteModeHiddenCards = ['card1', 'card3', 'card4', 'card5', 'card6', 'card11', 'card13', 'card14']; 
 
 // --- MAPS ---
@@ -182,11 +186,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 
-    // Lite Buttons
-    document.getElementById('lite-solved-plus').addEventListener('click', () => { liteSolved++; updateLiteModeUI(); });
-    document.getElementById('lite-solved-minus').addEventListener('click', () => { if (liteSolved > 0) liteSolved--; updateLiteModeUI(); });
-    document.getElementById('lite-escalated-plus').addEventListener('click', () => { liteEscalated++; updateLiteModeUI(); });
-    document.getElementById('lite-escalated-minus').addEventListener('click', () => { if (liteEscalated > 0) liteEscalated--; updateLiteModeUI(); });
+    // Lite Buttons Logic with History
+    document.getElementById('lite-solved-plus').addEventListener('click', () => { 
+        const m = getMultiplierForTime(new Date());
+        if (!liteSolvedMap[m]) liteSolvedMap[m] = 0;
+        liteSolvedMap[m]++; 
+        updateLiteModeUI(); 
+    });
+    document.getElementById('lite-solved-minus').addEventListener('click', () => { 
+        const m = getMultiplierForTime(new Date());
+        if (liteSolvedMap[m] && liteSolvedMap[m] > 0) {
+            liteSolvedMap[m]--; 
+            updateLiteModeUI(); 
+        }
+    });
+
+    document.getElementById('lite-escalated-plus').addEventListener('click', () => { 
+        const m = getMultiplierForTime(new Date());
+        if (!liteEscalatedMap[m]) liteEscalatedMap[m] = 0;
+        liteEscalatedMap[m]++; 
+        updateLiteModeUI(); 
+    });
+    document.getElementById('lite-escalated-minus').addEventListener('click', () => { 
+        const m = getMultiplierForTime(new Date());
+        if (liteEscalatedMap[m] && liteEscalatedMap[m] > 0) {
+            liteEscalatedMap[m]--; 
+            updateLiteModeUI(); 
+        }
+    });
+
     document.getElementById('lite-rated-plus').addEventListener('click', () => { liteRated++; updateLiteModeUI(); });
     document.getElementById('lite-rated-minus').addEventListener('click', () => { if (liteRated > 0) liteRated--; updateLiteModeUI(); });
     
@@ -331,7 +359,13 @@ function updateTimers() {
         const start = new Date(`${activeBreak.date}T${activeBreak.start}`);
         const end = new Date(`${activeBreak.date}T${activeBreak.end}`);
         const timeToEnd = end - now; const timeElapsed = now - start;
-        const typeText = activeBreak.type === 'break' ? 'перерыв' : 'обед'; const typeIcon = activeBreak.type === 'break' ? 'bi-cup-hot-fill' : 'bi-egg-fried';
+        
+        // LOGIC FOR BREAK TYPE
+        let typeText = 'перерыв';
+        let typeIcon = 'bi-cup-hot-fill';
+        if (activeBreak.type === 'lunch') { typeText = 'обед'; typeIcon = 'bi-egg-fried'; }
+        else if (activeBreak.type === 'off') { typeText = 'отгул'; typeIcon = 'bi-house-door-fill'; }
+
         const displayType = typeText.charAt(0).toUpperCase() + typeText.slice(1);
         
         breakTimers.innerHTML = `<div class="text-danger fw-bold fs-5 mt-2"><i class="${typeIcon}"></i> Идет ${typeText}</div><div class="fs-4 fw-bold">${formatTime(timeToEnd)}</div><small class="text-muted">Прошло: ${formatTime(timeElapsed)}</small>`;
@@ -350,7 +384,12 @@ function updateTimers() {
         flashTitle(false); 
         const upcomingBreaks = breaksLunches.filter(bl => new Date(`${bl.date}T${bl.start}`) > now).sort((a, b) => new Date(`${a.date}T${a.start}`) - new Date(`${b.date}T${b.start}`));
         if (upcomingBreaks.length > 0) {
-            const nextBreak = upcomingBreaks[0]; const start = new Date(`${nextBreak.date}T${nextBreak.start}`); const timeToStart = start - now; const typeText = nextBreak.type === 'break' ? 'перерыва' : 'обеда';
+            const nextBreak = upcomingBreaks[0]; const start = new Date(`${nextBreak.date}T${nextBreak.start}`); const timeToStart = start - now; 
+            
+            let typeText = 'перерыва';
+            if (nextBreak.type === 'lunch') typeText = 'обеда';
+            else if (nextBreak.type === 'off') typeText = 'отгула';
+
             breakTimers.innerHTML = `<div class="mt-2 text-primary fw-bold"><i class="bi bi-clock-history"></i> ${formatTime(timeToStart)}</div><small>до ${typeText}</small>`;
         } else { breakTimers.innerHTML = '<div class="mt-2 text-muted small">Нет перерывов</div>'; }
     }
@@ -413,10 +452,24 @@ window.addEventListener('load', function() {
     globalMultiplier = JSON.parse(localStorage.getItem('globalMultiplier')) || 1;
     const radio = document.querySelector(`input[name="globalMultiplier"][value="${globalMultiplier}"]`);
     if(radio) radio.checked = true;
-    liteSolved = JSON.parse(localStorage.getItem('liteSolved')) || 0;
-    liteEscalated = JSON.parse(localStorage.getItem('liteEscalated')) || 0;
-    liteRated = JSON.parse(localStorage.getItem('liteRated')) || 0;
     
+    // --- LITE MODE MIGRATION LOGIC ---
+    liteSolvedMap = JSON.parse(localStorage.getItem('liteSolvedMap')) || { "1": 0 };
+    liteEscalatedMap = JSON.parse(localStorage.getItem('liteEscalatedMap')) || { "1": 0 };
+    liteRated = JSON.parse(localStorage.getItem('liteRated')) || 0;
+
+    // Migrate old format (int) to new format (map) if exists
+    const oldLiteSolved = localStorage.getItem('liteSolved');
+    if (oldLiteSolved !== null && !localStorage.getItem('liteSolvedMap')) {
+        liteSolvedMap["1"] = parseInt(oldLiteSolved);
+        localStorage.removeItem('liteSolved'); // Clear old
+    }
+    const oldLiteEscalated = localStorage.getItem('liteEscalated');
+    if (oldLiteEscalated !== null && !localStorage.getItem('liteEscalatedMap')) {
+        liteEscalatedMap["1"] = parseInt(oldLiteEscalated);
+        localStorage.removeItem('liteEscalated'); // Clear old
+    }
+
     const hiddenCards = JSON.parse(localStorage.getItem('hiddenCards')) || [];
     hiddenCards.forEach(cardId => { const card = document.querySelector(`.card[data-card-id="${cardId}"]`); if (card) card.style.display = 'none'; });
     
@@ -485,11 +538,20 @@ function applyButtonOrder() {
 
 function resetData() {
     if (confirm("Вы уверены, что хотите сбросить все данные? Это действие нельзя отменить.")) {
-        localStorage.removeItem('breaksLunches'); localStorage.removeItem('calls'); localStorage.removeItem('selfHandlingCost'); localStorage.removeItem('escalationCost'); localStorage.removeItem('dismissedNotifications'); localStorage.removeItem('liteSolved'); localStorage.removeItem('liteEscalated'); localStorage.removeItem('liteRated'); localStorage.removeItem('payIntervals');
+        localStorage.removeItem('breaksLunches'); localStorage.removeItem('calls'); localStorage.removeItem('selfHandlingCost'); localStorage.removeItem('escalationCost'); localStorage.removeItem('dismissedNotifications'); 
+        
+        localStorage.removeItem('liteSolved'); // Clean old
+        localStorage.removeItem('liteEscalated'); // Clean old
+        localStorage.removeItem('liteSolvedMap'); 
+        localStorage.removeItem('liteEscalatedMap'); 
+        localStorage.removeItem('liteRated'); 
+        
+        localStorage.removeItem('payIntervals');
         localStorage.removeItem('shiftStartTime'); localStorage.removeItem('shiftEndTime');
         shiftDate = null; shiftStartTime = null; shiftEndTime = null;
         document.getElementById('shiftDate').value = ''; document.getElementById('startTime').value = ''; document.getElementById('endTime').value = '';
-        breaksLunches = []; calls = []; dismissedNotifications = []; payIntervals = []; liteSolved = 0; liteEscalated = 0; liteRated = 0;
+        breaksLunches = []; calls = []; dismissedNotifications = []; payIntervals = []; 
+        liteSolvedMap = { "1": 0 }; liteEscalatedMap = { "1": 0 }; liteRated = 0;
         updateTimers(); updatePayIntervalList(); updateStatistics(); updateCallList(); updateEscalatedCalls(); updateCallDurationStats(); updatePostCallDurationStats(); updateBreaksLunchesList(); updateLiteModeUI();
         alert('Данные сброшены!');
     }
@@ -511,7 +573,18 @@ function updateCallDurationStats() { const callDurationStats = document.getEleme
 function updatePostCallDurationStats() { const postCallDurationStats = document.getElementById('postCallDurationStats'); const avgDisplay = document.getElementById('avgPvoDuration'); postCallDurationStats.innerHTML = ''; const postCallDurationCounts = Array(3).fill(0); let totalWeightedSeconds = 0; let countWithDuration = 0; calls.forEach(call => { if(call.postCallDuration) { postCallDurationCounts[call.postCallDuration - 1]++; totalWeightedSeconds += pvoDurationMap[call.postCallDuration]; countWithDuration++; } }); const avgSeconds = countWithDuration > 0 ? totalWeightedSeconds / countWithDuration : 0; avgDisplay.textContent = calculateAverageTime(avgSeconds); const labels = ["<30 сек", "30-60 сек", ">60 сек"]; labels.forEach((label, i) => { if(postCallDurationCounts[i] > 0) { const colorClass = getPvoColorClass(i + 1); postCallDurationStats.innerHTML += `<div class="stat-row ${colorClass}"><span><i class="bi bi-stopwatch me-2"></i>${label}</span> <span class="badge bg-white text-dark rounded-pill">${postCallDurationCounts[i]}</span></div>`; } }); if(postCallDurationStats.innerHTML === '') postCallDurationStats.innerHTML = '<div class="text-muted text-center small">Нет данных</div>'; }
 function updateCallList() { const callList = document.getElementById('callList'); callList.innerHTML = ''; calls.forEach((call, index) => { const callDate = new Date(call.date); const cost = call.escalated ? getEscalationCost(callDate) : getSelfHandlingCost(callDate); const multiplier = getMultiplierForTime(callDate); const timeString = callDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); const getBadgeClass = (val, type) => { const v = parseInt(val); if (type === 'call') return v <= 3 ? 'bg-success text-white' : (v <= 9 ? 'bg-warning text-dark' : 'bg-danger text-white'); return v === 1 ? 'bg-success text-white' : (v === 2 ? 'bg-warning text-dark' : 'bg-danger text-white'); }; const itemHtml = `<div class="call-history-item p-3 position-relative"><div class="d-flex justify-content-between align-items-center mb-2"><span class="badge bg-light text-dark border"><i class="bi bi-clock"></i> ${timeString}</span><span class="fw-bold text-success">${cost.toFixed(2)} (x${multiplier})</span></div><div class="d-flex gap-2 mb-2"><span class="badge ${getBadgeClass(call.callDuration, 'call')} rounded-pill"><i class="bi bi-hourglass-split"></i> ${getCallDurationText(call.callDuration)}</span><span class="badge ${getBadgeClass(call.postCallDuration, 'pvo')} rounded-pill"><i class="bi bi-hourglass"></i> ${getPvoDurationText(call.postCallDuration)}</span></div><div class="d-flex gap-2">${call.escalated ? '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger">Эскалация</span>' : '<span class="badge bg-success bg-opacity-10 text-success border border-success">Решено</span>'}${call.rated ? '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary"><i class="bi bi-star-fill"></i> Оценен</span>' : ''}</div><button class="btn btn-sm text-danger position-absolute top-0 end-0 m-1 p-1" onclick="removeCall(${index})"><i class="bi bi-trash"></i></button></div>`; callList.innerHTML += itemHtml; }); }
 function updateEscalatedCalls() { const escalatedCallsDiv = document.getElementById('escalatedCalls'); escalatedCallsDiv.innerHTML = ''; const escalatedCallsData = calls.filter(call => call.escalated); escalatedCallsData.forEach((call, index) => { const originalIndex = calls.findIndex(c => c === call); const displayText = call.escalationQuestion ? call.escalationQuestion : '<span class="text-muted fst-italic">Текст не сохранен</span>'; escalatedCallsDiv.innerHTML += `<div class="call-history-item p-3 position-relative"><div class="small fw-bold mb-2 text-dark"><i class="bi bi-chat-quote me-1"></i>${displayText}</div><div class="d-flex justify-content-between small text-muted border-top pt-2 mt-2"><span>${getCallDurationText(call.callDuration)}</span><span>${getPvoDurationText(call.postCallDuration)}</span></div><button class="btn btn-sm text-danger position-absolute top-0 end-0 m-1 p-1" onclick="removeCall(${originalIndex})"><i class="bi bi-trash"></i></button></div>`; }); }
-function updateBreaksLunchesList() { const breaksLunchesList = document.getElementById('breaksLunchesList'); breaksLunchesList.innerHTML = ''; breaksLunches.forEach((breakLunch, index) => { const typeBadge = breakLunch.type === 'break' ? '<span class="badge bg-info text-dark">Перерыв</span>' : '<span class="badge bg-warning text-dark">Обед</span>'; breaksLunchesList.innerHTML += `<div class="d-flex justify-content-between align-items-center border-bottom py-2"><div>${typeBadge}<span class="fw-bold ms-2 font-monospace">${breakLunch.start} - ${breakLunch.end}</span><div class="small text-muted ms-1">${breakLunch.date}</div></div><button class="btn btn-sm btn-outline-danger border-0" onclick="removeBreakLunch(${index})"><i class="bi bi-x-lg"></i></button></div>`; }); }
+function updateBreaksLunchesList() { 
+    const breaksLunchesList = document.getElementById('breaksLunchesList'); 
+    breaksLunchesList.innerHTML = ''; 
+    breaksLunches.forEach((breakLunch, index) => { 
+        let typeBadge;
+        if (breakLunch.type === 'break') typeBadge = '<span class="badge bg-info text-dark">Перерыв</span>';
+        else if (breakLunch.type === 'lunch') typeBadge = '<span class="badge bg-warning text-dark">Обед</span>';
+        else if (breakLunch.type === 'off') typeBadge = '<span class="badge bg-secondary text-white">Отгул</span>';
+        
+        breaksLunchesList.innerHTML += `<div class="d-flex justify-content-between align-items-center border-bottom py-2"><div>${typeBadge}<span class="fw-bold ms-2 font-monospace">${breakLunch.start} - ${breakLunch.end}</span><div class="small text-muted ms-1">${breakLunch.date}</div></div><button class="btn btn-sm btn-outline-danger border-0" onclick="removeBreakLunch(${index})"><i class="bi bi-x-lg"></i></button></div>`; 
+    }); 
+}
 function removeCall(index) { calls.splice(index, 1); localStorage.setItem('calls', JSON.stringify(calls)); updateStatistics(); updateCallList(); updateEscalatedCalls(); updateCallDurationStats(); updatePostCallDurationStats(); }
 function removeBreakLunch(index) { breaksLunches.splice(index, 1); localStorage.setItem('breaksLunches', JSON.stringify(breaksLunches)); updateBreaksLunchesList(); }
 function formatTime(ms) { if (ms < 0) ms = 0; const totalSeconds = Math.floor(ms / 1000); const hours = Math.floor(totalSeconds / 3600); const minutes = Math.floor((totalSeconds % 3600) / 60); const seconds = totalSeconds % 60; return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; }
@@ -552,103 +625,228 @@ function updateEscalationVisibility() {
     }
 }
 
-// === EXPORT FUNCTIONS (IMPROVED STYLES) ===
 async function exportCalls() {
     if (currentMode === 'light') { alert('Экспорт отключен в Лёгком режиме.'); return; }
+    
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('История звонков');
 
-    // Headers
-    worksheet.columns = [
-        { header: '№', key: 'index', width: 5 },
-        { header: '⏳ Длительность', key: 'callDuration', width: 25 },
-        { header: '⏱ ПВО', key: 'postCallDuration', width: 25 },
-        { header: '📢 Эскалация', key: 'escalated', width: 15 },
-        { header: '⭐ Оценка', key: 'rated', width: 15 },
-        { header: '💰 Цена', key: 'price', width: 15 },
-        { header: '📅 Дата', key: 'date', width: 22 }
-    ];
-
-    // Header Style
-    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } }; // Blue header
-    worksheet.getRow(1).alignment = { horizontal: 'center' };
-
-    // Fills definitions
-    const fills = {
-        green: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1E7DD' } }, // Success
-        yellow: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3CD' } }, // Warning
-        orange: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBD1' } }, // Orange
-        red: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8D7DA' } },   // Danger
-        none: { type: 'pattern', pattern: 'none' }
+    const callDurationColors = {
+        "1": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00FF00' } }, 
+        "2": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00FF00' } },
+        "3": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00FF00' } },
+        "4": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } }, 
+        "5": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } },
+        "6": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } },
+        "7": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF8000' } }, 
+        "8": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF8000' } },
+        "9": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF8000' } },
+        "10": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } }, 
+        "11": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } }
+    };
+    const pvoDurationColors = {
+        "1": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00FF00' } },
+        "2": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } },
+        "3": { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } }
     };
 
+    worksheet.columns = [
+        { header: '№', key: 'index', width: 5, style: { font: { bold: true } } },
+        { header: 'Длительность звонка', key: 'callDuration', width: 25, style: { font: { bold: true } } },
+        { header: 'Время в ПВО', key: 'postCallDuration', width: 25, style: { font: { bold: true } } },
+        { header: 'Эскалирован?', key: 'escalated', width: 15, style: { font: { bold: true } } },
+        { header: 'Оценен?', key: 'rated', width: 10, style: { font: { bold: true } } },
+        { header: 'Цена', key: 'price', width: 10, style: { font: { bold: true } } }, 
+        { header: 'Дата', key: 'date', width: 21, style: { font: { bold: true } } },
+        { header: '', key: 'empty1', width: 10, style: { font: { bold: true } } }, 
+        { header: '', key: 'empty2', width: 34, style: { font: { bold: true } } }
+    ];
+
+    const headerStyle = { font: { bold: true }, border: { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }, alignment: { horizontal: 'center' } };
+    const headerRow = worksheet.getRow(1);
+    for (let colNumber = 1; colNumber <= 6; colNumber++) {
+        const cell = headerRow.getCell(colNumber);
+        cell.style = headerStyle;
+    }
+    worksheet.getRow(1).getCell(7).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thick' } };
+    worksheet.getRow(1).getCell(7).alignment = { horizontal: 'center' };
+
+    let selfCallsBasicScores = 0;
+    let escalateCallsBasicScores = 0;
+    const callDurationCounts = Array(11).fill(0);
+    const pvoDurationCounts = Array(3).fill(0);
+
     calls.forEach((call, index) => {
+        if(call.callDuration) callDurationCounts[call.callDuration - 1]++;
+        if(call.postCallDuration) pvoDurationCounts[call.postCallDuration - 1]++;
+
+        const callDate = new Date(call.date);
+        const multiplier = getMultiplierForTime(callDate);
+        
+        let cost = 0;
+        if (call.escalated) {
+            cost = getEscalationCost(callDate);
+            escalateCallsBasicScores += cost;
+        } else {
+            cost = getSelfHandlingCost(callDate);
+            selfCallsBasicScores += cost;
+        }
+
+        const callDurationText = getCallDurationText(call.callDuration);
+        const pvoDurationText = getPvoDurationText(call.postCallDuration);
+        const escalatedText = call.escalated ? 'Да' : 'Нет';
+        const ratedText = call.rated ? 'Да' : 'Нет';
+        
+        let priceText = cost.toFixed(2);
+        if (multiplier > 1) {
+            priceText += ` (x${multiplier})`;
+        }
+        
+        const dateInfo = callDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const timeInfo = callDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateText = `${dateInfo} ${timeInfo}`;
+
         const row = worksheet.addRow([
             index + 1,
-            getCallDurationText(call.callDuration),
-            getPvoDurationText(call.postCallDuration),
-            call.escalated ? '❗ Да' : 'Нет',
-            call.rated ? '⭐ Да' : 'Нет',
-            (call.escalated ? getEscalationCost(new Date(call.date)) : getSelfHandlingCost(new Date(call.date))).toFixed(2),
-            new Date(call.date).toLocaleString('ru-RU')
+            callDurationText,
+            pvoDurationText,
+            escalatedText,
+            ratedText,
+            priceText,
+            dateText
         ]);
 
-        const rowIndex = index + 2; // 1-based + header
-
-        // Styling Cells
-        // Center all
-        row.alignment = { horizontal: 'center' };
+        row.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        row.getCell(1).alignment = { horizontal: 'center' };
         
-        // Colors for Duration
-        let durColor = fills.none;
-        const durVal = parseInt(call.callDuration);
-        if(durVal <= 3) durColor = fills.green;
-        else if(durVal <= 6) durColor = fills.yellow;
-        else if(durVal <= 9) durColor = fills.orange;
-        else durColor = fills.red;
-        worksheet.getCell(`B${rowIndex}`).fill = durColor;
+        row.getCell(2).fill = callDurationColors[call.callDuration] || { type: 'pattern', pattern: 'none' };
+        row.getCell(2).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        row.getCell(2).alignment = { horizontal: 'center' };
+        row.getCell(2).font = { bold: false, color: { argb: 'FF000000' } }; 
 
-        // Colors for PVO
-        let pvoColor = fills.none;
-        const pvoVal = parseInt(call.postCallDuration);
-        if(pvoVal === 1) pvoColor = fills.green;
-        else if(pvoVal === 2) pvoColor = fills.yellow;
-        else pvoColor = fills.red;
-        worksheet.getCell(`C${rowIndex}`).fill = pvoColor;
+        row.getCell(3).fill = pvoDurationColors[call.postCallDuration] || { type: 'pattern', pattern: 'none' };
+        row.getCell(3).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(3).font = { bold: false, color: { argb: 'FF000000' } };
 
-        // Colors for Escalation
-        if (call.escalated) worksheet.getCell(`D${rowIndex}`).font = { color: { argb: 'FFFF0000' }, bold: true };
-        
-        // Borders
-        row.eachCell((cell) => {
-            cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-            };
-        });
+        row.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: call.escalated ? 'FF00FF00' : 'FFFF0000' } };
+        row.getCell(4).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        row.getCell(4).alignment = { horizontal: 'center' };
+
+        row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: call.rated ? 'FF00FF00' : 'FFFF0000' } };
+        row.getCell(5).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        row.getCell(5).alignment = { horizontal: 'center' };
+
+        row.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: call.escalated ? 'FF8080FF' : 'FF00FF00' } };
+        row.getCell(6).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        row.getCell(6).alignment = { horizontal: 'center' };
+
+        row.getCell(7).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thick' } };
+        row.getCell(7).alignment = { horizontal: 'center' };
+
+        if (index === calls.length - 1) {
+            row.getCell(1).border.bottom = { style: 'thick' };
+            row.getCell(2).border.bottom = { style: 'thick' };
+            row.getCell(3).border.bottom = { style: 'thick' };
+            row.getCell(4).border.bottom = { style: 'thick' };
+            row.getCell(5).border.bottom = { style: 'thick' };
+            row.getCell(6).border.bottom = { style: 'thick' };
+            row.getCell(7).border.bottom = { style: 'thick' };
+        }
     });
 
-    // Totals Section at the bottom
-    const totalRowIndex = calls.length + 4;
-    worksheet.getCell(`A${totalRowIndex}`).value = "ИТОГИ:";
-    worksheet.getCell(`A${totalRowIndex}`).font = { bold: true, size: 12 };
-    
-    // Simple stats output
+    let hoursSinceShiftStart = 1;
+    if(shiftDate && shiftStartTime) {
+        const timeSinceShiftStart = new Date() - new Date(`${shiftDate}T${shiftStartTime}`);
+        if(timeSinceShiftStart > 0) {
+             hoursSinceShiftStart = timeSinceShiftStart / (1000 * 60 * 60);
+        }
+    }
+
+    const totalCalls = calls.length;
     const stats = [
-        ['Всего звонков:', calls.length],
-        ['Эскалаций:', calls.filter(c=>c.escalated).length],
-        ['Оценок:', calls.filter(c=>c.rated).length]
+        ['Количество звонков:', totalCalls],
+        ['Звонков в час:', (totalCalls / hoursSinceShiftStart).toFixed(2)],
+        [],
+        ['Количество эскалаций:', calls.filter(call => call.escalated).length],
+        ['Процент эскалаций:', (totalCalls > 0 ? (calls.filter(call => call.escalated).length / totalCalls) * 100 : 0).toFixed(2) + '%'],
+        [],
+        ['Количество запросов оценок:', calls.filter(call => call.rated).length],
+        ['Процент запросов оценок:', (totalCalls > 0 ? (calls.filter(call => call.rated).length / totalCalls) * 100 : 0).toFixed(2) + '%'],
+        [],
+        ['Заработанные БО:', (selfCallsBasicScores + escalateCallsBasicScores).toFixed(2)],
+        ['БО за самостоятельную обработку:', selfCallsBasicScores.toFixed(2)],
+        ['БО за эскалирование:', escalateCallsBasicScores.toFixed(2)],
+        [],
+        ['Звонки до 1-й минуты:', callDurationCounts[0]],
+        ['Звонки до 2-х минут:', callDurationCounts[1]],
+        ['Звонки до 3-х минут:', callDurationCounts[2]],
+        ['Звонки до 4-х минут:', callDurationCounts[3]],
+        ['Звонки до 5-и минут:', callDurationCounts[4]],
+        ['Звонки до 6-и минут:', callDurationCounts[5]],
+        ['Звонки до 7-и минут:', callDurationCounts[6]],
+        ['Звонки до 8-и минут:', callDurationCounts[7]],
+        ['Звонки до 9-и минут:', callDurationCounts[8]],
+        ['Звонки до 10-и минут:', callDurationCounts[9]],
+        ['Звонки больше 10 минут:', callDurationCounts[10]],
+        [],
+        ['ПВО <= 30 секунд:', pvoDurationCounts[0]],
+        ['30 секунд < ПВО <= 60 секунд:', pvoDurationCounts[1]],
+        ['ПВО > 60 секунд:', pvoDurationCounts[2]]
     ];
-    
-    stats.forEach((stat, i) => {
-        const r = totalRowIndex + i + 1;
-        worksheet.getCell(`A${r}`).value = stat[0];
-        worksheet.getCell(`B${r}`).value = stat[1];
-        worksheet.getCell(`A${r}`).font = { bold: true };
+
+    stats.forEach((stat, index) => {
+        const row = worksheet.getRow(index + 1);
+        row.getCell(9).value = stat[0];
+        row.getCell(10).value = stat[1];
     });
+
+    const applyStatStyle = (rowIdx, colorBg) => {
+        const row = worksheet.getRow(rowIdx);
+        const fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorBg } };
+        row.getCell(9).fill = fill;
+        row.getCell(10).fill = fill;
+    };
+    
+    const setStatBorder = (rowIdx, top, bottom) => {
+        const row = worksheet.getRow(rowIdx);
+        row.getCell(9).border = { top: { style: top }, left: { style: 'thick' }, bottom: { style: bottom }, right: { style: 'thin' } };
+        row.getCell(10).border = { top: { style: top }, left: { style: 'thin' }, bottom: { style: bottom }, right: { style: 'thick' } };
+        row.getCell(10).alignment = { horizontal: 'left' };
+    };
+
+    applyStatStyle(1, 'FF00FF00'); applyStatStyle(2, 'FF00FF00');
+    setStatBorder(1, 'thick', 'thin'); setStatBorder(2, 'thin', 'thick');
+
+    applyStatStyle(4, 'FF8080FF'); applyStatStyle(5, 'FF8080FF');
+    setStatBorder(4, 'thick', 'thin'); setStatBorder(5, 'thin', 'thick');
+
+    applyStatStyle(7, 'FFFFFF00'); applyStatStyle(8, 'FFFFFF00');
+    setStatBorder(7, 'thick', 'thin'); setStatBorder(8, 'thin', 'thick');
+
+    applyStatStyle(10, 'FFFFFF00'); applyStatStyle(11, 'FF00FF00'); applyStatStyle(12, 'FF8080FF');
+    setStatBorder(10, 'thick', 'thin'); setStatBorder(11, 'thin', 'thin'); setStatBorder(12, 'thin', 'thick');
+
+    applyStatStyle(14, 'FF00FF00'); applyStatStyle(15, 'FF00FF00'); applyStatStyle(16, 'FF00FF00');
+    setStatBorder(14, 'thick', 'thin'); setStatBorder(15, 'thin', 'thin'); setStatBorder(16, 'thin', 'thin');
+    
+    applyStatStyle(17, 'FFFFFF00'); applyStatStyle(18, 'FFFFFF00'); applyStatStyle(19, 'FFFFFF00');
+    setStatBorder(17, 'thin', 'thin'); setStatBorder(18, 'thin', 'thin'); setStatBorder(19, 'thin', 'thin');
+
+    applyStatStyle(20, 'FFFF8000'); applyStatStyle(21, 'FFFF8000'); applyStatStyle(22, 'FFFF8000');
+    setStatBorder(20, 'thin', 'thin'); setStatBorder(21, 'thin', 'thin'); setStatBorder(22, 'thin', 'thin');
+
+    applyStatStyle(23, 'FFFF0000'); applyStatStyle(24, 'FFFF0000');
+    setStatBorder(23, 'thin', 'thin'); setStatBorder(24, 'thin', 'thick');
+
+    applyStatStyle(26, 'FF00FF00');
+    setStatBorder(26, 'thick', 'thin');
+    
+    applyStatStyle(27, 'FFFFFF00');
+    setStatBorder(27, 'thin', 'thin');
+
+    applyStatStyle(28, 'FFFF0000');
+    setStatBorder(28, 'thin', 'thick');
 
     await workbook.xlsx.writeBuffer().then(function(buffer) {
         saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `Звонки_${new Date().toLocaleDateString()}.xlsx`);
@@ -658,22 +856,18 @@ async function exportCalls() {
 function exportEscalations() {
     if (currentMode === 'light') { alert('Экспорт отключен в Лёгком режиме.'); return; }
     if (!saveEscalationText) { alert('Сохранение текста эскалаций отключено.'); return; }
+    
     const escalatedCalls = calls.filter(call => call.escalated);
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('История эскалаций');
     
-    worksheet.columns = [{ header: '№', key: 'index', width: 5 }, { header: '📝 Вопрос эскалации', key: 'question', width: 100 }];
-    
-    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC00000' } }; // Dark Red
+    worksheet.columns = [
+        { header: '№', key: 'index', width: 5 }, 
+        { header: 'Эскалируемый вопрос', key: 'question', width: 100 }
+    ];
     
     escalatedCalls.forEach((call, index) => { 
         const row = worksheet.addRow({ index: index + 1, question: call.escalationQuestion });
-        row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-        row.getCell(2).alignment = { wrapText: true }; // Wrap text for questions
-        row.eachCell((cell) => {
-            cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-        });
     });
     
     workbook.xlsx.writeBuffer().then(function(buffer) {
@@ -699,11 +893,48 @@ function updateButtonState() {
 }
 document.getElementById('callDuration').addEventListener('input', updateButtonState); document.getElementById('postCallDuration').addEventListener('input', updateButtonState); document.getElementById('escalationQuestionInput').addEventListener('input', updateButtonState);
 function applyDarkModeState() { const toggle = document.getElementById('darkModeToggle'); const label = document.querySelector('label[for="darkModeToggle"]'); if (isDarkMode) { document.body.classList.add('dark-mode'); if (toggle) toggle.checked = true; if (label) label.textContent = 'Включен'; } else { document.body.classList.remove('dark-mode'); if (toggle) toggle.checked = false; if (label) label.textContent = 'Выключен'; } resetCallForm(); }
+
+// --- UPDATED LITE MODE UI LOGIC (Fixing the x2/x3 global calculation bug) ---
 function updateLiteModeUI() {
-    const now = new Date(); const selfHandlingCost = parseFloat(document.getElementById('selfHandlingCostMain').value) || 0; const escalationCost = parseFloat(document.getElementById('escalationCostMain').value) || 0; const currentMultiplier = getMultiplierForTime(now);
-    document.getElementById('lite-solved-count').textContent = liteSolved; document.getElementById('lite-escalated-count').textContent = liteEscalated; document.getElementById('lite-rated-count').textContent = liteRated;
-    const totalCalls = liteSolved + liteEscalated; document.getElementById('lite-total-calls').textContent = totalCalls;
-    const escalPercent = totalCalls > 0 ? ((liteEscalated / totalCalls) * 100).toFixed(0) : 0; const escalPercentEl = document.getElementById('lite-escal-percent'); escalPercentEl.textContent = `${escalPercent}%`; escalPercentEl.style.color = escalPercent > 10 ? 'var(--stat-danger)' : 'var(--stat-success)';
-    const totalEarnings = ((liteSolved * selfHandlingCost) + (liteEscalated * escalationCost)) * currentMultiplier; const earningsEl = document.getElementById('lite-total-earnings'); earningsEl.textContent = totalEarnings.toFixed(2) + (currentMultiplier > 1 ? ` (x${currentMultiplier})` : '');
-    localStorage.setItem('liteSolved', JSON.stringify(liteSolved)); localStorage.setItem('liteEscalated', JSON.stringify(liteEscalated)); localStorage.setItem('liteRated', JSON.stringify(liteRated));
+    const selfHandlingCost = parseFloat(document.getElementById('selfHandlingCostMain').value) || 0;
+    const escalationCost = parseFloat(document.getElementById('escalationCostMain').value) || 0;
+    const now = new Date();
+    const currentMultiplier = getMultiplierForTime(now);
+
+    // Calculate totals
+    let totalSolved = 0;
+    let totalEscalated = 0;
+    let totalEarnings = 0;
+
+    // Sum up Solved buckets
+    for (const [multiplier, count] of Object.entries(liteSolvedMap)) {
+        totalSolved += count;
+        totalEarnings += (count * selfHandlingCost * parseFloat(multiplier));
+    }
+    
+    // Sum up Escalated buckets
+    for (const [multiplier, count] of Object.entries(liteEscalatedMap)) {
+        totalEscalated += count;
+        totalEarnings += (count * escalationCost * parseFloat(multiplier));
+    }
+
+    document.getElementById('lite-solved-count').textContent = totalSolved;
+    document.getElementById('lite-escalated-count').textContent = totalEscalated;
+    document.getElementById('lite-rated-count').textContent = liteRated;
+
+    const totalCalls = totalSolved + totalEscalated;
+    document.getElementById('lite-total-calls').textContent = totalCalls;
+
+    const escalPercent = totalCalls > 0 ? ((totalEscalated / totalCalls) * 100).toFixed(0) : 0;
+    const escalPercentEl = document.getElementById('lite-escal-percent');
+    escalPercentEl.textContent = `${escalPercent}%`;
+    escalPercentEl.style.color = escalPercent > 10 ? 'var(--stat-danger)' : 'var(--stat-success)';
+
+    const earningsEl = document.getElementById('lite-total-earnings');
+    // Show total earnings. Also show the CURRENT multiplier in parentheses just for info
+    earningsEl.textContent = totalEarnings.toFixed(2) + (currentMultiplier > 1 ? ` (сейчас x${currentMultiplier})` : '');
+
+    localStorage.setItem('liteSolvedMap', JSON.stringify(liteSolvedMap));
+    localStorage.setItem('liteEscalatedMap', JSON.stringify(liteEscalatedMap));
+    localStorage.setItem('liteRated', JSON.stringify(liteRated));
 }
